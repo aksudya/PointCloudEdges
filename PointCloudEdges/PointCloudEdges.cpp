@@ -24,7 +24,7 @@ void ReadDataAndInit()
 	//	points_te.insert(p);
 	//}
 
-    infile.open("result_edge_fan.xyz", ios::in);
+    infile.open("result_edge_bs11111 - Cloud.txt", ios::in);
     while (!infile.eof())
     {
         double x, y, z, ma;
@@ -33,7 +33,7 @@ void ReadDataAndInit()
         points_1.push_back(p);
     }
 
-    infile_ori.open("fan1.xyz", ios::in);
+    infile_ori.open("result_edge_bs11111 - Cloud.txt", ios::in);
     while (!infile_ori.eof())
     {
         double x, y, z, ma;
@@ -58,12 +58,23 @@ void ReadDataAndInit()
             glm::vec3{ points_ori[i].x(), points_ori[i].y(), points_ori[i].z() });
     }
     polyscope::registerPointCloud("origin point cloud", points_oriv);
-    polyscope::getPointCloud("origin point cloud")->setPointRadius(0.001);
-    polyscope::getPointCloud("points on edges")->setPointRadius(0.003);
+    polyscope::getPointCloud("origin point cloud")->setPointRadius(0.0005);
+    polyscope::getPointCloud("points on edges")->setPointRadius(0.001);
     ote.InitAddPoint(points_1);
     
 }
 
+void updateOriPoints()
+{
+	std::vector<glm::vec3> points;
+	for (size_t i = 0; i < ote.points_input.size(); i++)
+	{
+		points.push_back(
+			glm::vec3{ ote.points_input[i].x(), ote.points_input[i].y(), ote.points_input[i].z() });
+	}
+	polyscope::registerPointCloud("points on edges", points);
+	polyscope::getPointCloud("points on edges")->setPointRadius(0.001);
+}
 
 void addDataToPointCloud(string pointCloudName, const std::vector<glm::vec3>& points) {
 
@@ -118,7 +129,7 @@ void ShowCurveNetwork()
         edges.push_back({ i0,i1});
     }
     polyscope::registerCurveNetwork("lines1", vertexPositions, edges);
-    polyscope::getCurveNetwork("lines1")->setRadius(0.003);
+    polyscope::getCurveNetwork("lines1")->setRadius(0.001);
 }
 
 void ShowCurveNetwork(float value)
@@ -147,7 +158,7 @@ void ShowCurveNetwork(float value)
         edges.push_back({ i0,i1 });
     }
     polyscope::registerCurveNetwork("lines2", vertexPositions, edges);
-    polyscope::getCurveNetwork("lines2")->setRadius(0.003);
+    polyscope::getCurveNetwork("lines2")->setRadius(0.001);
 
 }
 
@@ -159,6 +170,36 @@ void AddDataToEdge()
         edgevalue.push_back(eit.second.valid_value);
     }
     polyscope::getCurveNetwork("lines1")->addEdgeScalarQuantity("edge value",edgevalue);
+}
+
+void Writedata()
+{
+	ofstream ofile;
+	ofile.open("out.xyz");
+	double res = 0.01;
+	for (auto eit : ote.ms1.edges)
+	{
+		Segment s = eit.first;
+		Point i0 = s.source();
+		Point i1 = s.target();
+		double length = sqrt(s.squared_length());
+		int k = length / res;
+		double dx = (i1.x()-i0.x()) / (double)k, dy = (i1.y() - i0.y()) / (double)k, dz = (i1.z() - i0.z()) / (double)k;
+		double x = i0.x();
+		double y = i0.y();
+		double z = i0.z();
+		for (int j = 0; j < k; ++j)
+		{
+			x += dx;
+			y += dy;
+			z += dz;
+
+			ofile << x << " " << y << " " << z << endl;
+		}
+		//edges.push_back({ i0,i1 });
+	}
+	ofile.close();
+	cout << "write finish" << endl;
 }
 
 void callback() 
@@ -216,7 +257,8 @@ void callback()
     if (ImGui::Button("Get valid"))
     {
         ote.CaculateAssinCost();
-        ote.GetValid1();      
+		ote.GetValid1();  	
+    	updateOriPoints();
         ShowCurveNetwork();
     	AddDataToEdge();
     }
@@ -243,7 +285,7 @@ void callback()
 		AddDataToEdge();
 	}
 
-    if (ImGui::InputFloat("threthold", &value, 2, 20))
+    if (ImGui::InputFloat("threshold", &value, 2, 20))
     {
         ShowCurveNetwork(value);
     }
@@ -260,6 +302,7 @@ void callback()
         {*/
             ote.PickAndCollap();
         //}
+		updateOriPoints();
         ShowCurveNetwork();
     }
     ImGui::SameLine();
@@ -269,6 +312,7 @@ void callback()
         {
             ote.PickAndCollap();
         }
+		updateOriPoints();
         ShowCurveNetwork();
     }
     ImGui::SameLine();
@@ -278,6 +322,7 @@ void callback()
         {
             ote.PickAndCollap();
         }
+		updateOriPoints();
         ShowCurveNetwork();
     }
     ImGui::InputInt("until Vertex1:", &steps1, 1, 100);
@@ -288,8 +333,31 @@ void callback()
         {
             ote.PickAndCollap();
         }
+		updateOriPoints();
         ShowCurveNetwork();
     }
+	//ImGui::SameLine();
+	if (ImGui::Button("Get validres"))
+	{
+		ote.CaculateAssinCost();
+		ote.GetValidres(value);
+		updateOriPoints();
+		ShowCurveNetwork();
+		//AddDataToEdge();
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("save data"))
+	{
+		Writedata();
+		//AddDataToEdge();
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("merge"))
+	{
+		ote.MergeLines();
+		ShowCurveNetwork();
+		//AddDataToEdge();
+	}
     ImGui::PopItemWidth();
 }
 
@@ -303,6 +371,7 @@ int main()
     polyscope::view::upDir = polyscope::view::UpDir::ZUp;  
     polyscope::view::bgColor = array<float, 4>{0.0, 0.0, 0.0, 1.0};
     polyscope::state::userCallback = callback;
+	polyscope::options::groundPlaneEnabled = false;
     
     polyscope::show();
 

@@ -103,6 +103,7 @@ class assignment
 {
 public:
     vector<Point> assined_points;
+	vector<Point> close_points;
     double to_edge_cost = 0;
     double to_vertex_cost = 0;
     double normal_cost = 0;
@@ -171,6 +172,8 @@ public:
     void BuildSampleKDtree();
     void BuildSampleKDtree(unordered_set<Segment, Segment_Hash, Segment_equal> local_edges);
     int MakeCollaps(const Point& s, const Point& t);
+	void InsertPoint(Segment e, Point p);
+	void MovePoint(Point s, Point t);
     void ClearAssin();
     void clear();
 };

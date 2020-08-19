@@ -46,6 +46,8 @@ public:
 	void ReDelauna();
 	void CopyDeToMs();
 	void PickAndCollap();
+	void AssinCost(int local = 0);
+	void AssinEdge();
 	double CaculateAssinCost(int local = 0);					//计算当前分配方案总代价
 	void GetMaxCost();							//获取最大的那个点
 	double CaculateEachEdgeCost();				//计算每条边的代价
@@ -54,7 +56,8 @@ public:
 	void CaculateVertexCost(Segment e, assignment& c);	//计算切向代价
 	void AssinToVertex(Segment e, assignment& c);		//重新分配给顶点
 	void GetValid1();
-
+	void GetValidres(double threshold);
+	void MergeLines();
 
 	void RelocateOnce();
 	Point Relocatev(Point v);		//relocate顶点v

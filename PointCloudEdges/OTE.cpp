@@ -107,6 +107,7 @@ void OTE::addPoint()
 	if (maxc.is_e)
 	{
 		Point p = ms2.edges.at(maxc.e).assign.maxpoint;
+		//ms2.InsertPoint(maxc.e, p);
 		delaunay_input.insert(p);
 		//delaunay_temp.insert(p);
 		//cout << "1" << p.mass << " ";
@@ -114,6 +115,7 @@ void OTE::addPoint()
 	else
 	{
 		Point p = ms2.Vertexs.at(maxc.p).assign.maxpoint;
+		//ms2.MovePoint(maxc.p, p);
 		delaunay_input.insert(p);
 		//delaunay_temp.insert(p);
 		//cout << p.mass << " ";
@@ -183,7 +185,46 @@ void OTE::CopyDeToMs()
 	}
 }
 
-double OTE::CaculateAssinCost(int local)
+void  OTE::AssinEdge()
+{
+
+	ms2.BuildSampleKDtree();
+
+	const PointCloudAdaptor  pc2kd1(ms2.cloud);
+	my_kd_tree_t   index1(3 /*dim*/, pc2kd1, KDTreeSingleIndexAdaptorParams(10/* max leaf */));
+	index1.buildIndex();
+
+	const size_t num_results = 1;
+	size_t ret_index;
+	double out_dist_sqr;
+	nanoflann::KNNResultSet<double> resultSet(num_results);
+
+	for (auto apit = assin_points.begin(); apit != assin_points.end(); apit++)
+	{
+
+		Point pnow = *apit;
+
+		double query_pt[3] = { pnow.x(), pnow.y(), pnow.z() };
+
+		resultSet.init(&ret_index, &out_dist_sqr);
+		index1.findNeighbors(resultSet, &query_pt[0], nanoflann::SearchParams(10));
+
+		Segment nearest_edge = ms2.cloud.pts[ret_index].s;
+
+		if (ms2.edges.find(nearest_edge) != ms2.edges.end())
+		{			
+			ms2.edges.at(nearest_edge).assign.close_points.push_back(pnow);
+		}
+		else
+		{
+			ms2.edges.at(TwinEdge(nearest_edge)).assign.close_points.push_back(pnow);
+		}
+		//ms2.edges.at(nearest_edge).assign.assined_points.push_back(pnow);
+
+	}
+}
+
+void  OTE::AssinCost(int local)
 {
 	if (local == 0 || sample_edge.empty())
 	{
@@ -225,7 +266,11 @@ double OTE::CaculateAssinCost(int local)
 		//ms2.edges.at(nearest_edge).assign.assined_points.push_back(pnow);
 
 	}
+}
 
+double OTE::CaculateAssinCost(int local)
+{
+	AssinCost(local);
 
 	double cost = CaculateEachEdgeCost();
 	if (!isCollaps)
@@ -342,6 +387,7 @@ void OTE::CaculateTangentialCost(Segment e, assignment& c)
 	for (auto pit = c.assined_points.begin(); pit != c.assined_points.end(); pit++)
 	{
 		double dist = PointProjectToSource(e, *pit);
+		//double dist = PointProjectToSource(e, *pit)/ sqrt(e.squared_length());
 		sort_tos.emplace_back(dist, *pit);
 		//sort_tos_m.emplace(dist, *pit);
 
@@ -351,6 +397,7 @@ void OTE::CaculateTangentialCost(Segment e, assignment& c)
 	sort(sort_tos.begin(), sort_tos.end());
 
 	double l = sqrt(e.squared_length()) / c.assined_points.size();
+	//double l = 1.0 / c.assined_points.size();
 	double sql = l * l;
 	centerCord = l / 2;		//每段中点的坐标
 
@@ -369,6 +416,7 @@ void OTE::CaculateTangentialCost(Segment e, assignment& c)
 		double li = l;
 		//double li = l ;
 		double n_cost = squared_distance(point, e);
+		//double n_cost = squared_distance(point, e) / sqrt(e.squared_length());
 		normal_cost += n_cost;
 
 		//tangential_cost
@@ -388,8 +436,8 @@ void OTE::CaculateTangentialCost(Segment e, assignment& c)
 			c.maxpoint = point;
 		}
 	}
-	c.normal_cost = normal_cost;
-	c.tangential_cost = tangential_cost;
+	c.normal_cost = normal_cost ;
+	c.tangential_cost = tangential_cost ;
 }
 
 double OTE::PointProjectToSource(Segment e, Point p)
@@ -449,13 +497,15 @@ void OTE::AssinToVertex(Segment e, assignment& c)
 
 void OTE::GetValid1()
 {
+	AssinEdge();
 	ms1 = ms2;
 	ms2.clear();
 	assin_points.clear();
+	vector<Point> DeletePoints;
 	for (auto epmit : ms1.edges)
 	{
 
-		if (!epmit.second.assign.assined_points.empty() || sqrt(epmit.first.squared_length()) < 0.5)
+		if (!epmit.second.assign.assined_points.empty() || sqrt(epmit.first.squared_length()) <0.4)
 		{
 			Vertex_data vd1;
 			Vertex_data vd2;
@@ -484,7 +534,35 @@ void OTE::GetValid1()
 			ms2.Vertexs.at(epmit.first.target()).adjacent_edges.push_back(tw);
 
 		}
+		else
+		{
+			for (auto pit: epmit.second.assign.close_points)
+			{
+				DeletePoints.push_back(pit);
+			}
+		}
+
 	}
+
+	for (auto vit: ms1.Vertexs)
+	{
+		Point vt = vit.first;
+		if(ms2.Vertexs.find(vt)==ms2.Vertexs.end())
+		{
+			DeletePoints.push_back(vt);
+		}
+	}
+
+	for (auto dvit:DeletePoints)
+	{
+		auto ivt = find(points_input.begin(), points_input.end(), dvit);
+		if (ivt != points_input.end())
+		{
+			points_input.erase(ivt);
+		}
+		
+	}
+
 	for (auto ipit = points_input.begin(); ipit != points_input.end(); ++ipit)
 	{
 		Point ip = *ipit;
@@ -494,6 +572,234 @@ void OTE::GetValid1()
 		}
 	}
 	ms1 = ms2;
+}
+
+void OTE::GetValidres(double threshold)
+{
+	AssinEdge();
+	ms1 = ms2;
+	ms2.clear();
+	assin_points.clear();
+	vector<Point> DeletePoints;
+	for (auto epmit : ms1.edges)
+	{
+
+		if (epmit.second.valid_value >= threshold )
+		{
+			/*double len = sqrt(epmit.first.squared_length());
+			auto adjs = ms1.Vertexs.at(epmit.first.source()).adjacent_edges;
+			auto adjt = ms1.Vertexs.at(epmit.first.target()).adjacent_edges;
+			if(len<=0.4&& adjs.size()==1&& adjt.size()==1)
+			{
+				continue;
+			}*/
+			Vertex_data vd1;
+			Vertex_data vd2;
+
+			edge_data ed;
+
+			
+			ms2.edges.emplace(epmit.first, ed);
+
+			ms2.Vertexs.emplace(epmit.first.source(), vd1);
+			ms2.Vertexs.emplace(epmit.first.target(), vd2);
+
+			Segment tw(epmit.first.target(), epmit.first.source());
+
+			ms2.Vertexs.at(epmit.first.source()).adjacent_edges.push_back(epmit.first);
+			ms2.Vertexs.at(epmit.first.target()).adjacent_edges.push_back(tw);
+
+		}
+		else
+		{
+			for (auto pit : epmit.second.assign.close_points)
+			{
+				DeletePoints.push_back(pit);
+			}
+		}
+
+	}
+
+	for (auto vit : ms1.Vertexs)
+	{
+		Point vt = vit.first;
+		if (ms2.Vertexs.find(vt) == ms2.Vertexs.end())
+		{
+			DeletePoints.push_back(vt);
+		}
+	}
+
+	for (auto dvit : DeletePoints)
+	{
+		auto ivt = find(points_input.begin(), points_input.end(), dvit);
+		if (ivt != points_input.end())
+		{
+			points_input.erase(ivt);
+		}
+
+	}
+
+	for (auto ipit = points_input.begin(); ipit != points_input.end(); ++ipit)
+	{
+		Point ip = *ipit;
+		if (ms2.Vertexs.find(ip) == ms2.Vertexs.end())
+		{
+			assin_points.push_back(ip);
+		}
+	}
+	ms1 = ms2;
+}
+
+void OTE::MergeLines()
+{
+
+	double thGapRatio = 20;
+	double thMergeRatio = 6;
+	double thDisHyps = 0.1;
+
+
+	ms1 = ms2;
+	bool ismerge = false;
+	vector<Segment> lines;
+	for (auto epmit : ms1.edges)
+	{
+		lines.push_back(epmit.first);
+	}
+		
+	std::vector<std::vector<double> > lineParas(lines.size());
+	std::vector<std::pair<int, double> > lineInfos(lines.size());
+	double mag = sqrt(lines[0].source().x() * lines[0].source().x() + lines[0].source().y() * lines[0].source().y() + lines[0].source().z() * lines[0].source().z());
+	int kk = 0;
+	for (auto lit:lines)
+	{
+		Point source = lit.source();
+		Point target = lit.target();
+		lineParas[kk].resize(6);
+		Vector v = target - source;
+		double len = sqrt(lit.squared_length());
+		v /= len;
+		Vector plus(source.x() + target.x(), source.y() + target.y(), source.z() + target.z());
+		Vector ptmid = 0.5 * plus;
+
+		Vector d= cross_product(v, ptmid) * (1.0 / mag);
+
+		double latitude = asin(abs(v.z()));
+
+		lineParas[kk][0] = v.x();       lineParas[kk][1] = v.y();       lineParas[kk][2] = v.z();
+		lineParas[kk][3] = latitude;
+		lineParas[kk][4] = sqrt(d.squared_length());
+		lineParas[kk][5] = len;
+
+		lineInfos[kk] = std::pair<int, double>(kk, len);
+		kk++;
+	}
+
+	std::sort(lineInfos.begin(), lineInfos.end(), [](const std::pair<int, double> & lhs, const std::pair<int, double> & rhs) { return lhs.second > rhs.second; });
+
+
+	double precision = 6.0 / 180.0 * polyscope::PI;
+	int laSize = polyscope::PI / 2.0 / precision;
+	std::vector<std::vector<int > > grid(laSize);
+	std::vector<int> gridIndex(lineParas.size());
+	for (int i = 0; i < lineParas.size(); ++i)
+	{
+		int la = lineParas[i][3] / precision;
+		grid[la].push_back(i);
+		gridIndex[i] = la;
+	}
+
+
+	//std::vector<bool> isUsed(lines.size(), 0);
+	//std::vector<std::vector<cv::Point3d> > linesNew;
+	for (int i = 0; i < lineInfos.size(); ++i)
+	{
+		int id0 = lineInfos[i].first;
+
+
+		//double lineScale = max(lineScales[id0], this->scale);
+		double vx0 = lineParas[id0][0], vy0 = lineParas[id0][1], vz0 = lineParas[id0][2];
+		double d0 = lineParas[id0][4], length0 = lineParas[id0][5];
+		//cv::Point3d pts0 = lines[id0][0], pte0 = lines[id0][1];
+		Point source = lines[id0].source();
+		Point target = lines[id0].target();
+
+		Segment st = lines[id0];
+
+		// get the merging hypotheses
+		//std::vector<int> idHyps;
+		std::vector<std::pair<int, double> > idHyps;
+		for (int j = -1; j <= 1; ++j)
+		{
+			int latemp = gridIndex[id0] + j;
+			int la = (latemp + laSize) % laSize;
+			for (int m = 0; m < grid[la].size(); ++m)
+			{
+				int idTemp = grid[la][m];
+				if(idTemp==id0)
+				{
+					continue;
+				}
+				if (abs(lineParas[idTemp][4] - d0) < thDisHyps)
+				{
+					Segment segtemp = lines[idTemp];
+					auto adjlist1 = ms1.Vertexs.at(source).adjacent_edges;
+					auto adjlist2 = ms1.Vertexs.at(target).adjacent_edges;
+					if (find(adjlist1.begin(), adjlist1.end(), segtemp) != adjlist1.end() ||
+						find(adjlist2.begin(), adjlist2.end(), segtemp) != adjlist2.end())
+					{
+						cout << abs(lineParas[idTemp][4] - d0)<<endl;
+						idHyps.emplace_back(idTemp,segtemp.squared_length());
+					}		
+				}
+			}
+		}
+
+		std::sort(idHyps.begin(), idHyps.end(), [](const std::pair<int, double> & lhs, const std::pair<int, double> & rhs) { return lhs.second < rhs.second; });
+
+		//bool ismerge = false;
+		// try merging
+		for (int j = 0; j < idHyps.size(); ++j)
+		{
+			int id1 = idHyps[j].first;
+			Segment segst = lines[id1];
+
+			Vector v1 = segst.source() - st.source();
+			Vector v2 = segst.source() - st.target();
+			Vector v3 = segst.target() - st.source();
+			Vector v4 = segst.target() - st.target();
+
+			double maxdis = max(max(v1.squared_length(),v2.squared_length()), 
+				max(v3.squared_length(), v4.squared_length()));
+
+			maxdis = sqrt(maxdis);
+
+			if (maxdis - length0 <= 1e-10)
+			{
+				if(segst.source()==source||segst.source()==target)
+				{
+					ms1.MakeCollaps(segst.target(), segst.source());
+				}
+				else
+				{
+					ms1.MakeCollaps(segst.source(), segst.target());
+				}
+				ismerge = true;
+				break;
+			}
+		}
+		if(ismerge)
+		{
+			cout << endl << "merge a line" << endl;
+			break;
+		}
+		
+
+	}
+	if(!ismerge)
+	{
+		cout << endl << "no line need merge" << endl;
+	}
+	ms2 = ms1;
 }
 
 void OTE::RelocateOnce()
@@ -738,11 +1044,44 @@ void OTE::PickAndCollap()
 
 	vector<Point> OneRingPoint;
 	//OneRingPoint.clear();
+
+	vector<Point> Todelete;
+	AssinEdge();
+	Segment ssss;
+	if (ms2.edges.find(less_seg) == ms2.edges.end())
+	{
+		ssss = TwinEdge(less_seg);
+	}
+	else
+	{
+		ssss = less_seg;
+	}
+	for (auto pit : ms2.edges.at(ssss).assign.close_points)
+	{
+		Todelete.push_back(pit);
+	}
+
+
+	Todelete.push_back(ssss.source());
+	Todelete.push_back(ssss.target());
+
 	OneRingPoint = GetOneRingVertex(less_seg.source());
 
 
 	int re = ms2.MakeCollaps(less_seg.source(), less_seg.target());
 
+	if(re==1)
+	{
+		for (auto dvit : Todelete)
+		{
+			auto ivt = find(points_input.begin(), points_input.end(), dvit);
+			if (ivt != points_input.end())
+			{
+				points_input.erase(ivt);
+			}
+
+		}
+	}
 
 	assin_points.clear();
 	for (auto ipit = points_input.begin(); ipit != points_input.end(); ++ipit)
@@ -758,7 +1097,7 @@ void OTE::PickAndCollap()
 
 	to_be_Collaps.clear();
 
-	if (iter_times % 100 == 0 || ms2.Vertexs.size() <= 200)
+	if (iter_times % 500 == 0 || ms2.Vertexs.size() <= 200)
 	{
 		for (auto eit = ms2.edges.begin(); eit != ms2.edges.end(); ++eit)
 		{
@@ -766,6 +1105,10 @@ void OTE::PickAndCollap()
 			to_be_Collaps.insert(sss);
 			to_be_Collaps.insert(TwinEdge(sss));
 		}
+	}
+	else if(re==1)
+	{
+		to_be_Collaps.clear();
 	}
 	else
 	{
@@ -834,7 +1177,14 @@ void OTE::UpdatePriQueue()
 		vector<Point> OneRingPoint_t = GetOneRingVertex(edge1.source());
 		int re = ms2.MakeCollaps(edge1.source(), edge1.target());
 
-		sample_edge = GetOneRingEdge(OneRingPoint_t, 1);
+		if(re!=1)
+		{
+			sample_edge = GetOneRingEdge(OneRingPoint_t, 1);
+		}
+		else
+		{
+			sample_edge.clear();
+		}
 
 		//if (re == 1)
 		//{
