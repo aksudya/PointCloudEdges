@@ -12,6 +12,7 @@ class OTE
 {
 public:
 	vector<Point> points_input;
+	vector<Point> oripoints;
 	Delaunay delaunay_input;
 	Delaunay delaunay_temp;
 	mymesh ms1;
@@ -32,6 +33,8 @@ public:
 	int iter_times;								//迭代次数
 
 	int debugvalue = 0;
+	int ctidx = -1;
+
 
 	bool isCollaps = false;
 
@@ -39,6 +42,7 @@ public:
 	~OTE();
 
 	void InitAddPoint(vector<Point> input);		//初始化加点
+	void InitGlobalCollape(vector<Point> oriPoints, vector<Point>seedPoints, vector<Segment> seededges);
 	void InitCollapAfterAdd();
 	void UpdatePriQueue();
 	void CollectAssPoint(Segment e);

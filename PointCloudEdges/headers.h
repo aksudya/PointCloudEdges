@@ -38,6 +38,7 @@
 #include <iostream>
 #include <unordered_set>
 #include <utility>
+#include <omp.h>
 
 #include "args/args.hxx"
 #include "json/json.hpp"

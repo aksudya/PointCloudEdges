@@ -11,7 +11,8 @@ OTE::~OTE()
 void OTE::InitAddPoint(vector<Point> input)
 {
 	points_input = input;
-	default_random_engine engine(6);
+	oripoints = input;
+	default_random_engine engine(5);
 	vector<bool> index(input.size(), false);
 	uniform_int_distribution<int> ud(0, input.size() - 1);
 	for (int i = 0; i < 3; ++i)
@@ -71,6 +72,69 @@ void OTE::InitAddPoint(vector<Point> input)
 	iter_times = 0;
 	ms2 = ms1;
 }
+
+void OTE::InitGlobalCollape(vector<Point> oriPoints, vector<Point> seedPoints,vector<Segment> seededges)
+{
+	points_input = oriPoints;
+	oripoints = oriPoints;
+	assin_points = oriPoints;
+
+	for (int i = 0; i < seedPoints.size(); ++i)
+	{	
+		delaunay_input.insert(Point(seedPoints[i].x(), seedPoints[i].y(), seedPoints[i].z()));
+	}
+
+
+	for (auto vit = delaunay_input.finite_vertices_begin(); vit != delaunay_input.finite_vertices_end(); ++vit)
+	{
+		/*vector<d_vertex_handle> outit;
+		delaunay_input.finite_adjacent_vertices(vit, std::back_inserter(outit));
+		list<Segment> adjacent_edge;
+		for (auto cvit = outit.begin(); cvit != outit.end(); ++cvit)
+		{
+			d_vertex_handle v = *cvit;
+			Point p1 = v->point();
+			Point p2 = vit->point();
+			Segment s(p2, p1);
+			adjacent_edge.push_back(s);
+
+		}*/
+		Vertex_data vd;
+		//vd.adjacent_edges = adjacent_edge;
+		ms1.Vertexs.emplace(vit->point(), vd);
+
+	}
+
+	for (auto eit = delaunay_input.finite_edges_begin(); eit != delaunay_input.finite_edges_end(); ++eit)
+	{
+
+		Point p1 = eit->first->vertex(eit->second)->point();
+		Point p2 = eit->first->vertex(eit->third)->point();
+		Segment s(p1, p2);
+		if (sqrt(s.squared_length()) <= 0.4)
+		{
+			edge_data ed;
+			ms1.edges.emplace(s, ed);
+		}
+		
+	}
+
+	for (auto& eit : seededges)
+	{
+		edge_data ed;
+		ms1.edges.emplace(eit, ed);
+	}
+
+	ms1.buildAdj();
+
+
+	
+
+	//pri_cost = 0;
+	iter_times = 0;
+	ms2 = ms1;
+}
+
 
 
 void OTE::InitCollapAfterAdd()
@@ -139,7 +203,7 @@ void OTE::addPoint()
 
 	ms2.ClearAssin();
 	//CaculateAssinCost();
-	cout << ms2.Vertexs.size() << endl;
+	//cout << ms2.Vertexs.size() << endl;
 }
 
 void OTE::ReDelauna()
@@ -259,9 +323,13 @@ void  OTE::AssinCost(int local)
 		{
 			ms2.edges.at(nearest_edge).assign.assined_points.push_back(pnow);
 		}
-		else
+		else if(ms2.edges.find(TwinEdge(nearest_edge)) != ms2.edges.end())
 		{
 			ms2.edges.at(TwinEdge(nearest_edge)).assign.assined_points.push_back(pnow);
+		}
+		else
+		{
+			cout << "!!!" << endl;
 		}
 		//ms2.edges.at(nearest_edge).assign.assined_points.push_back(pnow);
 
@@ -665,7 +733,11 @@ void OTE::MergeLines()
 	{
 		lines.push_back(epmit.first);
 	}
-		
+
+	if(lines.size()==0)
+	{
+		return;
+	}
 	std::vector<std::vector<double> > lineParas(lines.size());
 	std::vector<std::pair<int, double> > lineInfos(lines.size());
 	double mag = sqrt(lines[0].source().x() * lines[0].source().x() + lines[0].source().y() * lines[0].source().y() + lines[0].source().z() * lines[0].source().z());
@@ -704,6 +776,10 @@ void OTE::MergeLines()
 	for (int i = 0; i < lineParas.size(); ++i)
 	{
 		int la = lineParas[i][3] / precision;
+		if(la>=laSize)
+		{
+			la = laSize - 1;
+		}
 		grid[la].push_back(i);
 		gridIndex[i] = la;
 	}
@@ -747,7 +823,7 @@ void OTE::MergeLines()
 					if (find(adjlist1.begin(), adjlist1.end(), segtemp) != adjlist1.end() ||
 						find(adjlist2.begin(), adjlist2.end(), segtemp) != adjlist2.end())
 					{
-						cout << abs(lineParas[idTemp][4] - d0)<<endl;
+						//cout << abs(lineParas[idTemp][4] - d0)<<endl;
 						idHyps.emplace_back(idTemp,segtemp.squared_length());
 					}		
 				}
@@ -1039,7 +1115,7 @@ void OTE::PickAndCollap()
 
 
 	//Segment fst_edge = half_edge_queue.top().edge;
-	cout << less_cost << endl;
+	//cout << less_cost << endl;
 	//pri_cost = half_edge_queue.top().totalcost;
 
 	vector<Point> OneRingPoint;
@@ -1070,18 +1146,18 @@ void OTE::PickAndCollap()
 
 	int re = ms2.MakeCollaps(less_seg.source(), less_seg.target());
 
-	if(re==1)
-	{
-		for (auto dvit : Todelete)
-		{
-			auto ivt = find(points_input.begin(), points_input.end(), dvit);
-			if (ivt != points_input.end())
-			{
-				points_input.erase(ivt);
-			}
+	//if(re==1)
+	//{
+	//	for (auto dvit : Todelete)
+	//	{
+	//		auto ivt = find(points_input.begin(), points_input.end(), dvit);
+	//		if (ivt != points_input.end())
+	//		{
+	//			points_input.erase(ivt);
+	//		}
 
-		}
-	}
+	//	}
+	//}
 
 	assin_points.clear();
 	for (auto ipit = points_input.begin(); ipit != points_input.end(); ++ipit)
@@ -1092,12 +1168,12 @@ void OTE::PickAndCollap()
 			assin_points.push_back(ip);
 		}
 	}
-	cout << " ass1:" << assin_points.size() << " ";
+	//cout << " ass1:" << assin_points.size() << " ";
 	ms1 = ms2;
 
 	to_be_Collaps.clear();
 
-	if (iter_times % 500 == 0 || ms2.Vertexs.size() <= 200)
+	if (iter_times % 500 == 0 || ms2.Vertexs.size() <= 50)
 	{
 		for (auto eit = ms2.edges.begin(); eit != ms2.edges.end(); ++eit)
 		{
@@ -1143,7 +1219,7 @@ void OTE::PickAndCollap()
 	ms2.ClearAssin();
 	//edge_points_map_temp.clear();
 	CaculateAssinCost();
-	cout << iter_times << " ";
+	//cout << iter_times << " ";
 }
 
 void OTE::UpdatePriQueue()
@@ -1224,9 +1300,9 @@ void OTE::UpdatePriQueue()
 		assPoints += veit.second.assign.assined_points.size();
 	}
 
-	cout << "edge: " << ms2.edges.size() << " queuesize:" << pri_queue.size() << " " << ms2.Vertexs.size() << " "
-		<< to_be_Collaps.size() << " " << sample_edge.size() << " " << "de:" << debugvalue << " " << "toass:" << assin_points.size()
-		<< " assP:" << assPoints << " ";
+	//cout << "edge: " << ms2.edges.size() << " queuesize:" << pri_queue.size() << " " << ms2.Vertexs.size() << " "
+	//	<< to_be_Collaps.size() << " " << sample_edge.size() << " " << "de:" << debugvalue << " " << "toass:" << assin_points.size()
+	//	<< " assP:" << assPoints << " ";
 	debugvalue = 0;
 }
 

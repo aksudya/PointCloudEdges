@@ -147,9 +147,10 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;CGAL_HEADER_ONLY;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ConformanceMode>true</ConformanceMode>
+      <ConformanceMode>false</ConformanceMode>
       <AdditionalIncludeDirectories>C:\Users\46749\Desktop\PointCloudEdges\deps\include;C:\Users\46749\Desktop\PointCloudEdges\deps\deps\args;C:\Users\46749\Desktop\PointCloudEdges\deps\deps\glad\include;C:\Users\46749\Desktop\PointCloudEdges\deps\deps\glfw\include;C:\Users\46749\Desktop\PointCloudEdges\deps\deps\happly;C:\Users\46749\Desktop\PointCloudEdges\deps\deps\glm;C:\Users\46749\Desktop\PointCloudEdges\deps\deps\json\include;C:\Users\46749\Desktop\PointCloudEdges\deps\deps\stb;C:\Users\46749\Desktop\PointCloudEdges\deps\deps\imgui\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <BufferSecurityCheck>false</BufferSecurityCheck>
+      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

@@ -174,6 +174,7 @@ public:
     int MakeCollaps(const Point& s, const Point& t);
 	void InsertPoint(Segment e, Point p);
 	void MovePoint(Point s, Point t);
+	void buildAdj();
     void ClearAssin();
     void clear();
 };

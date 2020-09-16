@@ -30,7 +30,7 @@ void mymesh::clear()
 void mymesh::BuildSampleKDtree()
 {
 	cloud.clear();
-	double res = 0.1;
+	double res = 0.05;
 	
 	for (auto eit:edges)
 	{
@@ -62,7 +62,7 @@ void mymesh::BuildSampleKDtree()
 void mymesh::BuildSampleKDtree(unordered_set<Segment, Segment_Hash, Segment_equal> local_edges)
 {
 	cloud.clear();
-	double res = 0.1;
+	double res = 0.05;
 
 	//int n = 5;
 	for (auto eit = local_edges.begin(); eit != local_edges.end(); ++eit)
@@ -276,5 +276,17 @@ void mymesh::MovePoint(Point s, Point t)
 	{
 		edge_data ed;
 		edges.emplace(*ait, ed);
+	}
+}
+
+void mymesh::buildAdj()
+{
+	for (auto &eit:edges)
+	{
+		Point s = eit.first.source();
+		Point t = eit.first.target();
+		Segment twin(t, s);
+		Vertexs.at(s).adjacent_edges.push_back(eit.first);
+		Vertexs.at(t).adjacent_edges.push_back(twin);
 	}
 }
