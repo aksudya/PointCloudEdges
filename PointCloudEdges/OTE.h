@@ -42,7 +42,7 @@ public:
 	~OTE();
 
 	void InitAddPoint(vector<Point> input);		//初始化加点
-	void InitGlobalCollape(vector<Point> oriPoints, vector<Point>seedPoints, vector<Segment> seededges);
+	void InitGlobalCollape(vector<Point> oriPoints, vector<Point>seedPoints, vector<Segment> seededges, std::map<Point, int>);
 	void InitCollapAfterAdd();
 	void UpdatePriQueue();
 	void CollectAssPoint(Segment e);
@@ -53,7 +53,7 @@ public:
 	void AssinCost(int local = 0);
 	void AssinEdge();
 	double CaculateAssinCost(int local = 0);					//计算当前分配方案总代价
-	void GetMaxCost();							//获取最大的那个点
+	double GetMaxCost();							//获取最大的那个点
 	double CaculateEachEdgeCost();				//计算每条边的代价
 	void CaculateTangentialCost(Segment e, assignment& c);	//计算切向代价
 	double PointProjectToSource(Segment e, Point p);	//计算点p在e上的投影到e原点的距离

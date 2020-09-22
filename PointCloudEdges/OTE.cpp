@@ -73,7 +73,7 @@ void OTE::InitAddPoint(vector<Point> input)
 	ms2 = ms1;
 }
 
-void OTE::InitGlobalCollape(vector<Point> oriPoints, vector<Point> seedPoints,vector<Segment> seededges)
+void OTE::InitGlobalCollape(vector<Point> oriPoints, vector<Point> seedPoints,vector<Segment> seededges, std::map<Point, int> pNum)
 {
 	points_input = oriPoints;
 	oripoints = oriPoints;
@@ -110,8 +110,10 @@ void OTE::InitGlobalCollape(vector<Point> oriPoints, vector<Point> seedPoints,ve
 
 		Point p1 = eit->first->vertex(eit->second)->point();
 		Point p2 = eit->first->vertex(eit->third)->point();
+		int p1id = pNum.at(p1);
+		int p2id = pNum.at(p2);
 		Segment s(p1, p2);
-		if (sqrt(s.squared_length()) <= 0.4)
+		if (sqrt(s.squared_length()) <= 0.4 && p1id!=p2id)
 		{
 			edge_data ed;
 			ms1.edges.emplace(s, ed);
@@ -163,7 +165,9 @@ void OTE::addPoint()
 	ms1.ClearAssin();
 	ms2.ClearAssin();
 	
-	CaculateAssinCost();
+	double cost=CaculateAssinCost();
+
+	double maxcost = GetMaxCost();
 
 
 	//ReDelauna();
@@ -203,7 +207,12 @@ void OTE::addPoint()
 
 	ms2.ClearAssin();
 	//CaculateAssinCost();
-	//cout << ms2.Vertexs.size() << endl;
+	int nnn = assin_points.size();
+	if(nnn==0)
+	{
+		nnn = 1000000;
+	}
+	cout << maxcost << endl;
 }
 
 void OTE::ReDelauna()
@@ -341,15 +350,15 @@ double OTE::CaculateAssinCost(int local)
 	AssinCost(local);
 
 	double cost = CaculateEachEdgeCost();
-	if (!isCollaps)
-	{
-		GetMaxCost();
-	}
+	//if (!isCollaps)
+	//{
+	//	double maxcost=GetMaxCost();
+	//}
 
 	return cost;
 }
 
-void OTE::GetMaxCost()
+double OTE::GetMaxCost()
 {
 	double maxcost = 0;
 	for (const auto& pmit : ms2.Vertexs)
@@ -392,6 +401,7 @@ void OTE::GetMaxCost()
 		}
 		ms2.edges.at(e).assign = cost;
 	}
+	return maxcost;
 }
 
 double OTE::CaculateEachEdgeCost()
@@ -573,7 +583,7 @@ void OTE::GetValid1()
 	for (auto epmit : ms1.edges)
 	{
 
-		if (!epmit.second.assign.assined_points.empty() || sqrt(epmit.first.squared_length()) <0.4)
+		if (!epmit.second.assign.assined_points.empty() || sqrt(epmit.first.squared_length()) <0.1)
 		{
 			Vertex_data vd1;
 			Vertex_data vd2;

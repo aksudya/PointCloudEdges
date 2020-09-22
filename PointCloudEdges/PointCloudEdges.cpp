@@ -298,7 +298,7 @@ void callback()
 		double percent = steps / 100.0;
 		int idx = 0;
 
-#pragma omp parallel for
+//#pragma omp parallel for
 		for (int i = 0; i < otes.size(); ++i)
 		{
 			//auto oit = otes[i];
@@ -317,7 +317,7 @@ void callback()
 				otes[i].addPoint();
 			}
 			//ShowCurveNetwork(oit, i+1);
-#pragma omp critical
+//#pragma omp critical
 			{
 				idx++;
 				cout << idx << endl;
@@ -538,13 +538,16 @@ void callback()
 		std::vector<std::vector<Point>> oriP;
 		std::vector<std::vector<Point>> seedP;
 		std::vector<std::vector<Segment>> seededges;
+		std::map<Point, int> PNum;
 		oriP.resize(oriPoints.size());
 		seedP.resize(oriPoints.size());
 		seededges.resize(oriPoints.size());
 		//oteblks.resize(oriPoints.size());
+		int bid = 0;
 		for (auto& oit : otes)
 		{
 			int ctid = oit.ctidx;
+			bid++;
 			for (auto& pit:oit.oripoints)
 			{
 				oriP[ctid].push_back(pit);
@@ -552,6 +555,7 @@ void callback()
 			for (auto& vit:oit.ms2.Vertexs)
 			{
 				seedP[ctid].push_back(vit.first);
+				PNum.emplace(vit.first, bid);
 			}
 			for (auto& eit : oit.ms2.edges)
 			{
@@ -562,7 +566,7 @@ void callback()
 		for (int i = 0; i < oriPoints.size(); ++i)
 		{
 			OTE otetemp;
-			otetemp.InitGlobalCollape(oriP[i], seedP[i], seededges[i]);
+			otetemp.InitGlobalCollape(oriP[i], seedP[i], seededges[i], PNum);
 			otes.push_back(otetemp);
 		}
 
