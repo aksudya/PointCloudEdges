@@ -18,6 +18,7 @@ public:
 	mymesh ms1;
 	mymesh ms2;
 
+	unordered_set<Segment, Segment_Hash, Segment_equal> Face_max_edges;
 	vector<Point> assin_points;					//待分配的顶点
 	maxCost maxc;
 
@@ -29,14 +30,19 @@ public:
 	unordered_set<Point, Point_Hash, Point_equal> two_ring_point;
 	unordered_set<Segment, Segment_Hash, Segment_equal> sample_edge;
 
-	double pri_cost;							//上一次的代价
+	double pri_cost=0;							//上一次的代价
 	int iter_times;								//迭代次数
 
 	int debugvalue = 0;
 	int ctidx = -1;
 
+	int endtimes = 0;
+	double last_cost = 0;
+
 
 	bool isCollaps = false;
+
+	//std::ofstream logfile;
 
 	OTE();
 	~OTE();
@@ -62,6 +68,8 @@ public:
 	void GetValid1();
 	void GetValidres(double threshold);
 	void MergeLines();
+
+	void GetFaceLongEdge();
 
 	void RelocateOnce();
 	Point Relocatev(Point v);		//relocate顶点v

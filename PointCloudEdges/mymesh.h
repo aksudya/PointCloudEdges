@@ -118,6 +118,7 @@ public:
         normal_cost = 0;
         tangential_cost = 0;
         total_cost = 0;
+        Cost_max = 0;
     }
 
     void clearAll()
@@ -128,9 +129,11 @@ public:
         normal_cost = 0;
         tangential_cost = 0;
         total_cost = 0;
+        Cost_max = 0;
     }
 
     Point maxpoint;
+    double Cost_max=0;
 };
 
 class edge_data

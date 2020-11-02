@@ -68,6 +68,7 @@ void OTE::InitAddPoint(vector<Point> input)
 		ms1.edges.emplace(s, ed);
 	}
 
+	//logfile.open("logfile.txt");
 	//pri_cost = 0;
 	iter_times = 0;
 	ms2 = ms1;
@@ -212,7 +213,8 @@ void OTE::addPoint()
 	{
 		nnn = 1000000;
 	}
-	cout << maxcost << endl;
+	//logfile << cost << endl;
+	//cout <</*ms1.Vertexs.size()<<": "<<*/ cost << endl;
 }
 
 void OTE::ReDelauna()
@@ -376,6 +378,7 @@ double OTE::GetMaxCost()
 			{
 				maxdist = dists;
 				cost.maxpoint = *pit;
+				cost.Cost_max = maxdist;
 			}
 			ttcost += dists;
 		}
@@ -386,6 +389,12 @@ double OTE::GetMaxCost()
 			maxc.p = p;
 			maxc.is_e = false;
 		}
+		/*if (cost.Cost_max > maxcost)
+		{
+			maxcost = cost.Cost_max;
+			maxc.p = p;
+			maxc.is_e = false;
+		}*/
 		ms2.Vertexs.at(p).assign = cost;
 	}
 
@@ -399,6 +408,12 @@ double OTE::GetMaxCost()
 			maxc.e = e;
 			maxc.is_e = true;
 		}
+		/*if (cost.Cost_max > maxcost)
+		{
+			maxcost = cost.Cost_max;
+			maxc.e = e;
+			maxc.is_e = true;
+		}*/
 		ms2.edges.at(e).assign = cost;
 	}
 	return maxcost;
@@ -512,6 +527,7 @@ void OTE::CaculateTangentialCost(Segment e, assignment& c)
 		if (one_point_cost > max_cost) {
 			max_cost = one_point_cost;
 			c.maxpoint = point;
+			c.Cost_max = max_cost;
 		}
 	}
 	c.normal_cost = normal_cost ;
@@ -575,6 +591,7 @@ void OTE::AssinToVertex(Segment e, assignment& c)
 
 void OTE::GetValid1()
 {
+	GetFaceLongEdge();
 	AssinEdge();
 	ms1 = ms2;
 	ms2.clear();
@@ -582,9 +599,17 @@ void OTE::GetValid1()
 	vector<Point> DeletePoints;
 	for (auto epmit : ms1.edges)
 	{
-
-		if (!epmit.second.assign.assined_points.empty() || sqrt(epmit.first.squared_length()) <0.1)
+		if (!epmit.second.assign.assined_points.empty() || sqrt(epmit.first.squared_length()) <1)
 		{
+			Segment tw(epmit.first.target(), epmit.first.source());
+			if((Face_max_edges.find(epmit.first)!= Face_max_edges.end()||
+				Face_max_edges.find(tw) != Face_max_edges.end())&&
+				epmit.second.assign.assined_points.empty()
+				)
+			{
+				continue;
+			}
+
 			Vertex_data vd1;
 			Vertex_data vd2;
 			//vd.adjacent_edges = adjacent_edge;
@@ -606,7 +631,7 @@ void OTE::GetValid1()
 			ms2.Vertexs.emplace(epmit.first.source(), vd1);
 			ms2.Vertexs.emplace(epmit.first.target(), vd2);
 
-			Segment tw(epmit.first.target(), epmit.first.source());
+			//Segment tw(epmit.first.target(), epmit.first.source());
 
 			ms2.Vertexs.at(epmit.first.source()).adjacent_edges.push_back(epmit.first);
 			ms2.Vertexs.at(epmit.first.target()).adjacent_edges.push_back(tw);
@@ -888,6 +913,44 @@ void OTE::MergeLines()
 	ms2 = ms1;
 }
 
+void OTE::GetFaceLongEdge()
+{
+	Face_max_edges.clear();
+	for (auto fit=delaunay_input.finite_facets_begin();fit!=delaunay_input.finite_facets_end();fit++)
+	{
+		vector<Point> Ps;
+		for (int i = 0; i < 4; ++i)
+		{
+			if (i == fit->second)
+			{
+				continue;
+			}
+			Ps.push_back(fit->first->vertex(i)->point());
+		}
+		vector<Segment> Edges;
+		Segment s1(Ps[0], Ps[1]);
+		Segment s2(Ps[0], Ps[2]);
+		Segment s3(Ps[1], Ps[2]);
+
+		Edges.push_back(s1);
+		Edges.push_back(s2);
+		Edges.push_back(s3);
+		double maxlen = 0;
+		Segment MaxEdge;
+		for (int i = 0; i < Edges.size(); ++i)
+		{
+			double len = Edges[i].squared_length();
+			if(len>maxlen)
+			{
+				maxlen = len;
+				MaxEdge = Edges[i];
+			}
+		}
+		Face_max_edges.emplace(MaxEdge);
+	}
+	
+}
+
 void OTE::RelocateOnce()
 {
 	vector<Point> newps;
@@ -1110,7 +1173,17 @@ void OTE::PickAndCollap()
 	//if(iter_times==1)
 	//{
 	ms2.ClearAssin();
+	last_cost = pri_cost;
 	pri_cost = CaculateAssinCost();
+	if ((pri_cost - last_cost)  >= 0.01&&last_cost!=0)
+	{
+		endtimes++;
+	}
+	else
+	{
+		endtimes = 0;
+	}
+	cout << pri_cost << endl;
 	ms1 = ms2;
 	ms2.ClearAssin();
 	//vertex_points_map = vertex_points_map_temp;

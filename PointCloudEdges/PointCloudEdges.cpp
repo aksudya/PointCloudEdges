@@ -38,6 +38,10 @@ void ReadDataAndInit()
         double x, y, z;
 		int ct, blk;
         infile >> x >> y >> z>>ct>>blk;
+		//infile >> x >> y>>z ;
+		////z = 0;
+		//ct = 0;
+		//blk = 0;
         Point p(x, y, z);
     	if(ct+1>maxct)
 		{
@@ -68,6 +72,7 @@ void ReadDataAndInit()
 		int ct, blk;
 		//infile >> x >> y >> z >> ct >> blk;
         infile_ori >> x >> y >> z >> ct >> blk;
+		//infile_ori >> x >> y>>z ;
         Point p(x, y, z, 1);
         points_ori.push_back(p);
     }
@@ -291,7 +296,7 @@ void callback()
         ShowCurveNetwork();
     }*/
 
-    ImGui::InputFloat("until % Vertex:", &steps, 1, 5);
+    ImGui::InputFloat("until % Vertex:", &steps, 0.1, 5);
     ImGui::SameLine();
 	if (ImGui::Button("Go"))
     {
@@ -316,6 +321,7 @@ void callback()
 			{
 				otes[i].addPoint();
 			}
+			//otes[i].addPoint();
 			//ShowCurveNetwork(oit, i+1);
 //#pragma omp critical
 			{
@@ -479,7 +485,7 @@ void callback()
 		double percent = steps1 / 100.0;
 		int idx = 0;
 
-#pragma omp parallel for
+//#pragma omp parallel for
 		for (int i = 0; i < otes.size(); ++i)
 		{
 			//auto oit = otes[i];
@@ -489,7 +495,11 @@ void callback()
 			{
 				goal = 5;
 			}
-			while (otes[i].ms2.Vertexs.size() > goal)
+			/*while (otes[i].ms2.Vertexs.size() > goal)
+			{
+				otes[i].PickAndCollap();
+			}*/
+			while (otes[i].endtimes < 3&& otes[i].ms2.Vertexs.size()>=5)
 			{
 				otes[i].PickAndCollap();
 			}
@@ -497,7 +507,7 @@ void callback()
 
 			//ShowCurveNetwork(oit, i+1);
 
-#pragma omp critical
+//#pragma omp critical
 			{
 				idx++;
 				cout << idx << endl;
