@@ -12,7 +12,7 @@ void OTE::InitAddPoint(vector<Point> input)
 {
 	points_input = input;
 	oripoints = input;
-	default_random_engine engine(5);
+	default_random_engine engine(0);
 	vector<bool> index(input.size(), false);
 	uniform_int_distribution<int> ud(0, input.size() - 1);
 	for (int i = 0; i < 3; ++i)
@@ -147,6 +147,9 @@ void OTE::InitCollapAfterAdd()
 	iter_times = 0;
 	debugvalue = 0;
 	isCollaps = true;
+	endtimes = 0;
+	last_cost = 0;
+	llast_cost = 0;
 	//ms2 = ms1;
 	to_be_Collaps.clear();
 	for (auto eit = ms2.edges.begin(); eit != ms2.edges.end(); ++eit)
@@ -167,6 +170,20 @@ void OTE::addPoint()
 	ms2.ClearAssin();
 	
 	double cost=CaculateAssinCost();
+
+	last_cost = llast_cost;
+	llast_cost = CaculateAssinCost();
+
+	if ((llast_cost - last_cost) >= -0.03 && last_cost != 0)
+	{
+		endtimes++;
+	}
+	else
+	{
+		endtimes = 0;
+	}
+	//cout << llast_cost << endl;
+
 
 	double maxcost = GetMaxCost();
 
@@ -1183,7 +1200,7 @@ void OTE::PickAndCollap()
 	{
 		endtimes = 0;
 	}
-	cout << pri_cost << endl;
+	//cout << pri_cost << endl;
 	ms1 = ms2;
 	ms2.ClearAssin();
 	//vertex_points_map = vertex_points_map_temp;

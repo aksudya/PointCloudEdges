@@ -218,7 +218,7 @@ void AddDataToEdge(OTE& ote, int i)
 void Writedata()
 {
 	ofstream ofile;
-	ofile.open("out.xyz");
+	ofile.open("out1.xyz");
 	double res = 0.01;
 	for (auto& ote : otes)
 	{
@@ -245,6 +245,29 @@ void Writedata()
 		}
 	}
 	
+	ofile.close();
+	cout << "write finish" << endl;
+}
+
+void writedata_lines()
+{
+	ofstream ofile;
+	ofile.open("outLines.xyz");
+	//double res = 0.01;
+	for (auto& ote : otes)
+	{
+		for (auto eit : ote.ms1.edges)
+		{
+			Segment s = eit.first;
+			Point i0 = s.source();
+			Point i1 = s.target();
+			
+			ofile << i0.x() << " " << i0.y() << " " << i0.z() << " ";
+			ofile << i1.x() << " " << i1.y() << " " << i1.z() << endl;
+			//edges.push_back({ i0,i1 });
+		}
+	}
+
 	ofile.close();
 	cout << "write finish" << endl;
 }
@@ -303,7 +326,7 @@ void callback()
 		double percent = steps / 100.0;
 		int idx = 0;
 
-//#pragma omp parallel for
+#pragma omp parallel for
 		for (int i = 0; i < otes.size(); ++i)
 		{
 			//auto oit = otes[i];
@@ -317,13 +340,17 @@ void callback()
 			{
 				goal = otes[i].oripoints.size()-1;
 			}
-			while (otes[i].ms2.Vertexs.size() <= goal)
+			/*while (otes[i].ms2.Vertexs.size() <= goal)
+			{
+				otes[i].addPoint();
+			}*/
+			while (otes[i].endtimes < 3 && otes[i].assin_points.size() >= 5)
 			{
 				otes[i].addPoint();
 			}
 			//otes[i].addPoint();
 			//ShowCurveNetwork(oit, i+1);
-//#pragma omp critical
+#pragma omp critical
 			{
 				idx++;
 				cout << idx << endl;
@@ -485,7 +512,7 @@ void callback()
 		double percent = steps1 / 100.0;
 		int idx = 0;
 
-//#pragma omp parallel for
+#pragma omp parallel for
 		for (int i = 0; i < otes.size(); ++i)
 		{
 			//auto oit = otes[i];
@@ -507,7 +534,7 @@ void callback()
 
 			//ShowCurveNetwork(oit, i+1);
 
-//#pragma omp critical
+#pragma omp critical
 			{
 				idx++;
 				cout << idx << endl;
@@ -591,7 +618,8 @@ void callback()
 	ImGui::SameLine();
 	if (ImGui::Button("save data"))
 	{
-		Writedata();
+		//Writedata();
+		writedata_lines();
 		//AddDataToEdge();
 	}
 	ImGui::SameLine();

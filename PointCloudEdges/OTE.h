@@ -38,7 +38,7 @@ public:
 
 	int endtimes = 0;
 	double last_cost = 0;
-
+	double llast_cost = 0;
 
 	bool isCollaps = false;
 
