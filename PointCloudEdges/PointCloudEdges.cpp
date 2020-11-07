@@ -30,15 +30,15 @@ void ReadDataAndInit()
 
 	//oriPoints.resize(1000);
 
-    infile.open("stg1_4plans_spl.xyz", ios::in);
+    infile.open("Star1 - Cloud.txt", ios::in);
 	int maxct = 0;
 	int blksize = 0;
     while (!infile.eof())
     {
         double x, y, z;
 		int ct, blk;
-        infile >> x >> y >> z>>ct>>blk;
-		//infile >> x >> y>>z ;
+        //infile >> x >> y >> z>>ct>>blk;
+		infile >> x >> y>>z ;
 		////z = 0;
 		//ct = 0;
 		//blk = 0;
@@ -65,14 +65,14 @@ void ReadDataAndInit()
 		blksize += ctit.size();
 	}
 
-    infile_ori.open("stg1_4plans_spl.xyz", ios::in);
+    infile_ori.open("Star1 - Cloud.txt", ios::in);
     while (!infile_ori.eof())
     {
         double x, y, z, ma;
 		int ct, blk;
 		//infile >> x >> y >> z >> ct >> blk;
-        infile_ori >> x >> y >> z >> ct >> blk;
-		//infile_ori >> x >> y>>z ;
+        //infile_ori >> x >> y >> z >> ct >> blk;
+		infile_ori >> x >> y>>z ;
         Point p(x, y, z, 1);
         points_ori.push_back(p);
     }

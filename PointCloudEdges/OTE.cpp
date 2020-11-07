@@ -174,7 +174,9 @@ void OTE::addPoint()
 	last_cost = llast_cost;
 	llast_cost = CaculateAssinCost();
 
-	if ((llast_cost - last_cost) >= -0.03 && last_cost != 0)
+
+	//-0.03
+	if ((llast_cost - last_cost) >= -0.001 && last_cost != 0)
 	{
 		endtimes++;
 	}
@@ -616,7 +618,8 @@ void OTE::GetValid1()
 	vector<Point> DeletePoints;
 	for (auto epmit : ms1.edges)
 	{
-		if (!epmit.second.assign.assined_points.empty() || sqrt(epmit.first.squared_length()) <1)
+		//1
+		if (!epmit.second.assign.assined_points.empty() || sqrt(epmit.first.squared_length()) <0.1)
 		{
 			Segment tw(epmit.first.target(), epmit.first.source());
 			if((Face_max_edges.find(epmit.first)!= Face_max_edges.end()||
@@ -1192,7 +1195,8 @@ void OTE::PickAndCollap()
 	ms2.ClearAssin();
 	last_cost = pri_cost;
 	pri_cost = CaculateAssinCost();
-	if ((pri_cost - last_cost)  >= 0.01&&last_cost!=0)
+	//0.01
+	if ((pri_cost - last_cost)  >= 0.003&&last_cost!=0)
 	{
 		endtimes++;
 	}
