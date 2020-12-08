@@ -114,7 +114,8 @@ void OTE::InitGlobalCollape(vector<Point> oriPoints, vector<Point> seedPoints,ve
 		int p1id = pNum.at(p1);
 		int p2id = pNum.at(p2);
 		Segment s(p1, p2);
-		if (sqrt(s.squared_length()) <= 0.4 && p1id!=p2id)
+		//0.4
+		if (sqrt(s.squared_length()) <= 7* R_MEAN && p1id!=p2id)
 		{
 			edge_data ed;
 			ms1.edges.emplace(s, ed);
@@ -176,7 +177,7 @@ void OTE::addPoint()
 
 
 	//-0.03
-	if ((llast_cost - last_cost) >= -0.001 && last_cost != 0)
+	if ((llast_cost - last_cost) >= -R_MEAN/THREATH && (llast_cost - last_cost)<=0 && last_cost != 0)
 	{
 		endtimes++;
 	}
@@ -619,7 +620,7 @@ void OTE::GetValid1()
 	for (auto epmit : ms1.edges)
 	{
 		//1
-		if (!epmit.second.assign.assined_points.empty() || sqrt(epmit.first.squared_length()) <0.1)
+		if (!epmit.second.assign.assined_points.empty() || sqrt(epmit.first.squared_length()) < 7*R_MEAN)
 		{
 			Segment tw(epmit.first.target(), epmit.first.source());
 			if((Face_max_edges.find(epmit.first)!= Face_max_edges.end()||
@@ -676,15 +677,15 @@ void OTE::GetValid1()
 		}
 	}
 
-	for (auto dvit:DeletePoints)
-	{
-		auto ivt = find(points_input.begin(), points_input.end(), dvit);
-		if (ivt != points_input.end())
-		{
-			points_input.erase(ivt);
-		}
-		
-	}
+	//for (auto dvit:DeletePoints)
+	//{
+	//	auto ivt = find(points_input.begin(), points_input.end(), dvit);
+	//	if (ivt != points_input.end())
+	//	{
+	//		points_input.erase(ivt);
+	//	}
+	//	
+	//}
 
 	for (auto ipit = points_input.begin(); ipit != points_input.end(); ++ipit)
 	{
@@ -707,7 +708,7 @@ void OTE::GetValidres(double threshold)
 	for (auto epmit : ms1.edges)
 	{
 
-		if (epmit.second.valid_value >= threshold )
+		if (epmit.second.valid_value >= threshold || sqrt(epmit.first.squared_length()) < 3*R_MEAN)
 		{
 			/*double len = sqrt(epmit.first.squared_length());
 			auto adjs = ms1.Vertexs.at(epmit.first.source()).adjacent_edges;
@@ -1195,8 +1196,10 @@ void OTE::PickAndCollap()
 	ms2.ClearAssin();
 	last_cost = pri_cost;
 	pri_cost = CaculateAssinCost();
-	//0.01
-	if ((pri_cost - last_cost)  >= 0.003&&last_cost!=0)
+
+	//0.03
+	//0.003
+	if ((pri_cost - last_cost)  >= R_MEAN/ (THREATH) &&last_cost!=0)
 	{
 		endtimes++;
 	}

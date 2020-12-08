@@ -11,6 +11,8 @@ std::vector<std::vector<std::vector<Point>>> oriPoints;
 std::vector<OTE> otes;
 std::vector<OTE> oteblks;
 //OTE ote;
+string filename = "./bs1/";
+
 
 void ReadDataAndInit()
 {
@@ -30,15 +32,15 @@ void ReadDataAndInit()
 
 	//oriPoints.resize(1000);
 
-    infile.open("Star1 - Cloud.txt", ios::in);
+    infile.open(filename+"outsplitbs.xyz", ios::in);
 	int maxct = 0;
 	int blksize = 0;
     while (!infile.eof())
     {
         double x, y, z;
 		int ct, blk;
-        //infile >> x >> y >> z>>ct>>blk;
-		infile >> x >> y>>z ;
+        infile >> x >> y >> z>>ct>>blk;
+		//infile >> x >> y>>z ;
 		////z = 0;
 		//ct = 0;
 		//blk = 0;
@@ -60,19 +62,20 @@ void ReadDataAndInit()
 		
     }
 
+
 	for (auto &ctit:oriPoints)
 	{
 		blksize += ctit.size();
 	}
 
-    infile_ori.open("Star1 - Cloud.txt", ios::in);
+    infile_ori.open(filename+"bs1.txt", ios::in);
     while (!infile_ori.eof())
     {
         double x, y, z, ma;
 		int ct, blk;
 		//infile >> x >> y >> z >> ct >> blk;
-        //infile_ori >> x >> y >> z >> ct >> blk;
-		infile_ori >> x >> y>>z ;
+        infile_ori >> x >> y >> z /*>> ct >> blk*/;
+		//infile_ori >> x >> y>>z ;
         Point p(x, y, z, 1);
         points_ori.push_back(p);
     }
@@ -102,7 +105,7 @@ void ReadDataAndInit()
 		//blksize += ctit.size();
 		for (auto &bit:ctit)
 		{
-			if (bit.size() >= 3)
+			if (bit.size() >= 5)
 			{
 				OTE tempo;
 				tempo.ctidx = ctid;
@@ -218,7 +221,7 @@ void AddDataToEdge(OTE& ote, int i)
 void Writedata()
 {
 	ofstream ofile;
-	ofile.open("out1.xyz");
+	ofile.open(filename + "out1.xyz");
 	double res = 0.01;
 	for (auto& ote : otes)
 	{
@@ -252,7 +255,7 @@ void Writedata()
 void writedata_lines()
 {
 	ofstream ofile;
-	ofile.open("outLines.xyz");
+	ofile.open(filename + "outLines.xyz");
 	//double res = 0.01;
 	for (auto& ote : otes)
 	{
@@ -340,14 +343,17 @@ void callback()
 			{
 				goal = otes[i].oripoints.size()-1;
 			}
-			/*while (otes[i].ms2.Vertexs.size() <= goal)
-			{
-				otes[i].addPoint();
-			}*/
-			while (otes[i].endtimes < 3 && otes[i].assin_points.size() >= 5)
+
+			//while (otes[i].ms2.Vertexs.size() <= goal)
+			//{
+			//	otes[i].addPoint();
+			//}
+
+			while (otes[i].endtimes < 5 && otes[i].assin_points.size() >= 5)
 			{
 				otes[i].addPoint();
 			}
+
 			//otes[i].addPoint();
 			//ShowCurveNetwork(oit, i+1);
 #pragma omp critical
@@ -398,6 +404,10 @@ void callback()
 		int idx = 0;
 		for (auto& oit : otes)
 		{
+			if (oit.ms2.Vertexs.size() <= 1)
+			{
+				continue;
+			}
 			idx++; 
 			oit.CaculateAssinCost();
 			oit.GetValid1();
@@ -429,6 +439,10 @@ void callback()
 		for (auto& oit : otes)
 		{
 			idx++;
+			if(oit.ms2.Vertexs.size()<=1)
+			{
+				continue;
+			}
 			oit.CaculateAssinCost();
 			oit.RelocateOnce();
 			oit.CaculateAssinCost();
@@ -522,14 +536,16 @@ void callback()
 			{
 				goal = 5;
 			}
-			/*while (otes[i].ms2.Vertexs.size() > goal)
-			{
-				otes[i].PickAndCollap();
-			}*/
+			//while (otes[i].ms2.Vertexs.size() > 8)
+			//{
+			//	otes[i].PickAndCollap();
+			//}
+
 			while (otes[i].endtimes < 3&& otes[i].ms2.Vertexs.size()>=5)
 			{
 				otes[i].PickAndCollap();
 			}
+
 			//updateOriPoints(oit, idx);
 
 			//ShowCurveNetwork(oit, i+1);
@@ -561,6 +577,10 @@ void callback()
 		int idx = 0;
 		for (auto& oit : otes)
 		{
+			if (oit.ms2.Vertexs.size() <= 1)
+			{
+				continue;
+			}
 			idx++;
 			oit.CaculateAssinCost();
 			oit.GetValidres(value);
@@ -618,7 +638,7 @@ void callback()
 	ImGui::SameLine();
 	if (ImGui::Button("save data"))
 	{
-		//Writedata();
+		Writedata();
 		writedata_lines();
 		//AddDataToEdge();
 	}

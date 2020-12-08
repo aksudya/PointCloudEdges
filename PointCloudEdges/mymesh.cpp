@@ -30,7 +30,7 @@ void mymesh::clear()
 void mymesh::BuildSampleKDtree()
 {
 	cloud.clear();
-	double res = 0.05;
+	double res = R_MEAN;
 	
 	for (auto eit:edges)
 	{
@@ -62,7 +62,7 @@ void mymesh::BuildSampleKDtree()
 void mymesh::BuildSampleKDtree(unordered_set<Segment, Segment_Hash, Segment_equal> local_edges)
 {
 	cloud.clear();
-	double res = 0.05;
+	double res = R_MEAN;
 
 	//int n = 5;
 	for (auto eit = local_edges.begin(); eit != local_edges.end(); ++eit)
