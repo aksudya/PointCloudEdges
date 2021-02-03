@@ -29,7 +29,8 @@ public:
 	unordered_set<Segment, Segment_Hash, Segment_equal> two_ring_edge;
 	unordered_set<Point, Point_Hash, Point_equal> two_ring_point;
 	unordered_set<Segment, Segment_Hash, Segment_equal> sample_edge;
-
+	default_random_engine engine1;
+	
 	double pri_cost=0;							//上一次的代价
 	int iter_times;								//迭代次数
 

@@ -1,7 +1,7 @@
 ﻿#pragma once
 //#include "headers.h"
 #include "OTE.h"
-
+#include <time.h>
 std::vector<Point> points_1;
 std::vector<Point> points_re;
 std::vector<Point> points_ori;
@@ -11,8 +11,8 @@ std::vector<std::vector<std::vector<Point>>> oriPoints;
 std::vector<OTE> otes;
 std::vector<OTE> oteblks;
 //OTE ote;
-string filename = "./bs1/";
-
+string filename = "./meccube/";
+double run_time = 0;
 
 void ReadDataAndInit()
 {
@@ -32,7 +32,7 @@ void ReadDataAndInit()
 
 	//oriPoints.resize(1000);
 
-    infile.open(filename+"outsplitbs.xyz", ios::in);
+    infile.open(filename+"outsplit.xyz", ios::in);
 	int maxct = 0;
 	int blksize = 0;
     while (!infile.eof())
@@ -68,13 +68,13 @@ void ReadDataAndInit()
 		blksize += ctit.size();
 	}
 
-    infile_ori.open(filename+"bs1.txt", ios::in);
+    infile_ori.open(filename+"outsplit.xyz", ios::in);
     while (!infile_ori.eof())
     {
         double x, y, z, ma;
 		int ct, blk;
 		//infile >> x >> y >> z >> ct >> blk;
-        infile_ori >> x >> y >> z /*>> ct >> blk*/;
+        infile_ori >> x >> y >> z >> ct >> blk;
 		//infile_ori >> x >> y>>z ;
         Point p(x, y, z, 1);
         points_ori.push_back(p);
@@ -195,7 +195,7 @@ void ShowCurveNetwork(OTE& ote, int tt,float value)
     for (auto eit : ote.ms1.edges)
     {
         Segment s = eit.first;
-        if(eit.second.valid_value<value)
+        if(eit.second.valid_value<value && sqrt(s.squared_length())>=5*R_MEAN)
         {
 	        continue;
         }
@@ -326,7 +326,13 @@ void callback()
     ImGui::SameLine();
 	if (ImGui::Button("Go"))
     {
+		clock_t start, end;
+		//start = clock(); 
+
+		//end = clock();   
 		double percent = steps / 100.0;
+		
+		start = clock();
 		int idx = 0;
 
 #pragma omp parallel for
@@ -334,7 +340,7 @@ void callback()
 		{
 			//auto oit = otes[i];
 			//idx++;
-			int goal = otes[i].oripoints.size() * percent;
+		/*	int goal = otes[i].oripoints.size() * percent;
 			if (goal <= 5)
 			{
 				goal = 5;
@@ -342,27 +348,34 @@ void callback()
 			if (otes[i].oripoints.size() <= 5)
 			{
 				goal = otes[i].oripoints.size()-1;
-			}
+			}*/
 
-			//while (otes[i].ms2.Vertexs.size() <= goal)
-			//{
-			//	otes[i].addPoint();
-			//}
+			/*goal = 200;
+			while (otes[i].ms2.Vertexs.size() <= goal)
+			{
+				otes[i].addPoint();
+			}*/
 
-			while (otes[i].endtimes < 5 && otes[i].assin_points.size() >= 5)
+			while (otes[i].endtimes < 3 && otes[i].assin_points.size() >= 2)
 			{
 				otes[i].addPoint();
 			}
 
 			//otes[i].addPoint();
 			//ShowCurveNetwork(oit, i+1);
-#pragma omp critical
-			{
-				idx++;
-				cout << idx << endl;
-			}
+//#pragma omp critical
+//			{
+//				idx++;
+//				cout << idx << endl;
+//			}
 		}
+		end = clock();   //结束时间
 
+		double addtime = double(end - start) / CLOCKS_PER_SEC;
+		run_time += addtime;
+		cout << "add time:" << addtime << "\ttotaltime:" << run_time << endl;
+
+		
 		for (int i = 0; i < otes.size(); ++i)
 		{
 			auto oit = otes[i];
@@ -400,7 +413,10 @@ void callback()
 
     if (ImGui::Button("Get valid"))
     {
+		clock_t start, end;
+		start = clock(); 
 
+		  
 		int idx = 0;
 		for (auto& oit : otes)
 		{
@@ -411,11 +427,26 @@ void callback()
 			idx++; 
 			oit.CaculateAssinCost();
 			oit.GetValid1();
+			//ShowCurveNetwork(oit, idx);
+			//AddDataToEdge(oit, idx);
+		}
+
+        end = clock();
+		double validtime = double(end - start) / CLOCKS_PER_SEC;
+		run_time += validtime;
+		cout << "valid time:" << validtime << "\ttotaltime:" << run_time << endl;
+
+		idx = 0;
+		for (auto& oit : otes)
+		{
+			if (oit.ms2.Vertexs.size() <= 1)
+			{
+				continue;
+			}
+			idx++;
 			ShowCurveNetwork(oit, idx);
 			AddDataToEdge(oit, idx);
 		}
-
-       
     	//updateOriPoints();
         //ShowCurveNetwork();
     	
@@ -434,7 +465,8 @@ void callback()
 	ImGui::SameLine();
 	if (ImGui::Button("Relocate"))
 	{
-
+		clock_t start, end;
+		start = clock();
 		int idx = 0;
 		for (auto& oit : otes)
 		{
@@ -446,10 +478,24 @@ void callback()
 			oit.CaculateAssinCost();
 			oit.RelocateOnce();
 			oit.CaculateAssinCost();
-			ShowCurveNetwork(oit, idx);
+			//ShowCurveNetwork(oit, idx);
 			//AddDataToEdge(oit, idx);
 		}
+		end = clock();
+		double Relocatetime = double(end - start) / CLOCKS_PER_SEC;
+		run_time += Relocatetime;
+		cout << "Relocate time:" << Relocatetime << "\ttotaltime:" << run_time << endl;
 
+		idx = 0;
+		for (auto& oit : otes)
+		{
+			if (oit.ms2.Vertexs.size() <= 1)
+			{
+				continue;
+			}
+			idx++;
+			ShowCurveNetwork(oit, idx);
+		}
 		//ote.CaculateAssinCost();
 		//ote.RelocateOnce();
 		////ote.ReDelauna();
@@ -476,6 +522,9 @@ void callback()
 
     if (ImGui::Button("Prepare collaps"))
     {
+		clock_t start, end;
+		start = clock();
+    	
 		for (auto& oit : otes)
 		{
 			oit.InitCollapAfterAdd();
@@ -485,7 +534,10 @@ void callback()
 			ShowCurveNetwork(oit, idx);
 			AddDataToEdge(oit, idx);*/
 		}
-
+		end = clock();
+		double pctime = double(end - start) / CLOCKS_PER_SEC;
+		run_time += pctime;
+		cout << "Prepare collaps time:" << pctime << "\ttotaltime:" << run_time << endl;
        // ote.InitCollapAfterAdd();
         cout << "fin pre!" << endl;
     }
@@ -524,6 +576,8 @@ void callback()
     if (ImGui::Button("Go1"))
     {
 		double percent = steps1 / 100.0;
+		clock_t start, end;
+		start = clock();
 		int idx = 0;
 
 #pragma omp parallel for
@@ -531,17 +585,17 @@ void callback()
 		{
 			//auto oit = otes[i];
 			//idx++;
-			int goal = otes[i].oripoints.size() * percent;
+			/*int goal = otes[i].oripoints.size() * percent;
 			if (goal < 5)
 			{
 				goal = 5;
-			}
+			}*/
 			//while (otes[i].ms2.Vertexs.size() > 8)
 			//{
 			//	otes[i].PickAndCollap();
 			//}
 
-			while (otes[i].endtimes < 3&& otes[i].ms2.Vertexs.size()>=5)
+			while (otes[i].endtimes < 3&& otes[i].ms2.Vertexs.size()>=10)
 			{
 				otes[i].PickAndCollap();
 			}
@@ -550,14 +604,18 @@ void callback()
 
 			//ShowCurveNetwork(oit, i+1);
 
-#pragma omp critical
-			{
-				idx++;
-				cout << idx << endl;
-			}
+//#pragma omp critical
+//			{
+//				idx++;
+//				cout << idx << endl;
+//			}
 		}
 
-
+		end = clock();
+		double collapstime = double(end - start) / CLOCKS_PER_SEC;
+		run_time += collapstime;
+		cout << "collaps time:" << collapstime << "\ttotaltime:" << run_time << endl;
+    	
 		for (int i = 0; i < otes.size(); ++i)
 		{
 			auto oit = otes[i];

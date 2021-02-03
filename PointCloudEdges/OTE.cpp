@@ -13,6 +13,7 @@ void OTE::InitAddPoint(vector<Point> input)
 	points_input = input;
 	oripoints = input;
 	default_random_engine engine(0);
+	engine1.seed(0);
 	vector<bool> index(input.size(), false);
 	uniform_int_distribution<int> ud(0, input.size() - 1);
 	for (int i = 0; i < 3; ++i)
@@ -177,7 +178,11 @@ void OTE::addPoint()
 
 
 	//-0.03
-	if ((llast_cost - last_cost) >= -R_MEAN/THREATH && (llast_cost - last_cost)<=0 && last_cost != 0)
+	//if ((llast_cost - last_cost) >= -R_MEAN/THREATH && (llast_cost - last_cost)<=0 && last_cost != 0)
+	//{
+	//	endtimes++;
+	//}
+	if ((llast_cost - last_cost) / (R_MEAN) >= -1.0/(THREATH) && (llast_cost - last_cost) <= 0 && last_cost != 0)
 	{
 		endtimes++;
 	}
@@ -185,19 +190,30 @@ void OTE::addPoint()
 	{
 		endtimes = 0;
 	}
-	//cout << llast_cost << endl;
-
+	//cout << llast_cost/(oripoints.size()* R_MEAN )/*<<"   "<<*/ /*(llast_cost - last_cost) / (R_MEAN * oripoints.size())*/ << endl;
+	//cout << (llast_cost - last_cost) /  R_MEAN << endl;
 
 	double maxcost = GetMaxCost();
 
 
 	//ReDelauna();
 
+	//uniform_int_distribution<int> ud(0, input.size() - 1);
+	
+	int asize = assin_points.size();
+	uniform_int_distribution<int> ud(0, asize - 1);
+	int id = ud(engine1);
+	Point pp = assin_points[id];
+	
 	if (maxc.is_e)
 	{
 		Point p = ms2.edges.at(maxc.e).assign.maxpoint;
+
 		//ms2.InsertPoint(maxc.e, p);
+
 		delaunay_input.insert(p);
+		//delaunay_input.insert(pp);
+		
 		//delaunay_temp.insert(p);
 		//cout << "1" << p.mass << " ";
 	}
@@ -205,7 +221,10 @@ void OTE::addPoint()
 	{
 		Point p = ms2.Vertexs.at(maxc.p).assign.maxpoint;
 		//ms2.MovePoint(maxc.p, p);
+		
 		delaunay_input.insert(p);
+		//delaunay_input.insert(pp);
+		
 		//delaunay_temp.insert(p);
 		//cout << p.mass << " ";
 	}
@@ -228,11 +247,13 @@ void OTE::addPoint()
 
 	ms2.ClearAssin();
 	//CaculateAssinCost();
-	int nnn = assin_points.size();
+	
+	/*int nnn = assin_points.size();
 	if(nnn==0)
 	{
 		nnn = 1000000;
-	}
+	}*/
+	
 	//logfile << cost << endl;
 	//cout <</*ms1.Vertexs.size()<<": "<<*/ cost << endl;
 }
@@ -409,12 +430,12 @@ double OTE::GetMaxCost()
 			maxc.p = p;
 			maxc.is_e = false;
 		}
-		/*if (cost.Cost_max > maxcost)
-		{
-			maxcost = cost.Cost_max;
-			maxc.p = p;
-			maxc.is_e = false;
-		}*/
+		//if (cost.Cost_max > maxcost)
+		//{
+		//	maxcost = cost.Cost_max;
+		//	maxc.p = p;
+		//	maxc.is_e = false;
+		//}
 		ms2.Vertexs.at(p).assign = cost;
 	}
 
@@ -422,19 +443,25 @@ double OTE::GetMaxCost()
 	{
 		Segment e = emit.first;
 		assignment cost = emit.second.assign;
+		
 		if (cost.total_cost > maxcost)
 		{
 			maxcost = cost.total_cost;
 			maxc.e = e;
 			maxc.is_e = true;
 		}
-		/*if (cost.Cost_max > maxcost)
-		{
-			maxcost = cost.Cost_max;
-			maxc.e = e;
-			maxc.is_e = true;
-		}*/
+		//max
+		
+		//if (cost.Cost_max > maxcost)
+		//{
+		//	maxcost = cost.Cost_max;
+		//	maxc.e = e;
+		//	maxc.is_e = true;
+		//}
+		//golebalmax
+		
 		ms2.edges.at(e).assign = cost;
+		
 	}
 	return maxcost;
 }
@@ -708,7 +735,7 @@ void OTE::GetValidres(double threshold)
 	for (auto epmit : ms1.edges)
 	{
 
-		if (epmit.second.valid_value >= threshold || sqrt(epmit.first.squared_length()) < 3*R_MEAN)
+		if (epmit.second.valid_value >= threshold || sqrt(epmit.first.squared_length()) < 5*R_MEAN)
 		{
 			/*double len = sqrt(epmit.first.squared_length());
 			auto adjs = ms1.Vertexs.at(epmit.first.source()).adjacent_edges;
@@ -1199,7 +1226,11 @@ void OTE::PickAndCollap()
 
 	//0.03
 	//0.003
-	if ((pri_cost - last_cost)  >= R_MEAN/ (THREATH) &&last_cost!=0)
+	/*if ((pri_cost - last_cost)  >= R_MEAN/ (THREATH) &&last_cost!=0)
+	{
+		endtimes++;
+	}*/
+	if ((pri_cost - last_cost) / (R_MEAN)  >= 1.0 / (THREATH) &&last_cost!=0)
 	{
 		endtimes++;
 	}
@@ -1207,7 +1238,8 @@ void OTE::PickAndCollap()
 	{
 		endtimes = 0;
 	}
-	//cout << pri_cost << endl;
+	//cout << pri_cost / (oripoints.size() * R_MEAN) << "   " << (pri_cost - last_cost) / (R_MEAN*oripoints.size()) << endl;
+	
 	ms1 = ms2;
 	ms2.ClearAssin();
 	//vertex_points_map = vertex_points_map_temp;
