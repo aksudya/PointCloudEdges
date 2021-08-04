@@ -2,6 +2,9 @@
 //#include "headers.h"
 #include "OTE.h"
 #include <time.h>
+
+#define ONE
+
 std::vector<Point> points_1;
 std::vector<Point> points_re;
 std::vector<Point> points_ori;
@@ -11,7 +14,7 @@ std::vector<std::vector<std::vector<Point>>> oriPoints;
 std::vector<OTE> otes;
 std::vector<OTE> oteblks;
 //OTE ote;
-string filename = "./meccube/";
+string filename = "./data/";
 double run_time = 0;
 
 void ReadDataAndInit()
@@ -32,18 +35,18 @@ void ReadDataAndInit()
 
 	//oriPoints.resize(1000);
 
-    infile.open(filename+"outsplit.xyz", ios::in);
+    infile.open(filename+"mc1.txt", ios::in);
 	int maxct = 0;
 	int blksize = 0;
     while (!infile.eof())
     {
         double x, y, z;
 		int ct, blk;
-        infile >> x >> y >> z>>ct>>blk;
-		//infile >> x >> y>>z ;
-		////z = 0;
-		//ct = 0;
-		//blk = 0;
+        //infile >> x >> y >> z>>ct>>blk;
+		infile >> x >> y>>z;
+		z = 0;
+		ct = 0;
+		blk = 0;
         Point p(x, y, z);
     	if(ct+1>maxct)
 		{
@@ -68,14 +71,16 @@ void ReadDataAndInit()
 		blksize += ctit.size();
 	}
 
-    infile_ori.open(filename+"outsplit.xyz", ios::in);
+    infile_ori.open(filename+"mc1.txt", ios::in);
     while (!infile_ori.eof())
     {
         double x, y, z, ma;
 		int ct, blk;
 		//infile >> x >> y >> z >> ct >> blk;
-        infile_ori >> x >> y >> z >> ct >> blk;
-		//infile_ori >> x >> y>>z ;
+        //infile_ori >> x >> y >> z >> ct >> blk;
+		infile_ori >> x >> y>>z ;
+		//infile_ori >> x >> y ;
+		z = 0;
         Point p(x, y, z, 1);
         points_ori.push_back(p);
     }
@@ -134,6 +139,32 @@ void updateOriPoints(OTE &ote,int i)
 	polyscope::getPointCloud("points on edges" + std::to_string(i))->setPointRadius(0.001);
 }
 
+void updatevertexPoints(OTE& ote, int i)
+{
+	std::vector<glm::vec3> points;
+	for (auto vit : ote.ms1.Vertexs)
+	{
+		points.push_back(
+			glm::vec3{ vit.first.x(), vit.first.y(), vit.first.z() });
+	}
+	polyscope::registerPointCloud("points vertex" + std::to_string(i), points);
+	polyscope::getPointCloud("points vertex" + std::to_string(i))->setPointRadius(0.003);
+}
+
+void updatevertexPoints()
+{
+	std::vector<glm::vec3> points;
+	for (auto& ote : otes)
+	{
+		for (auto vit : ote.ms1.Vertexs)
+		{
+			points.push_back(
+				glm::vec3{ vit.first.x(), vit.first.y(), vit.first.z() });
+		}
+	}
+	polyscope::registerPointCloud("points vertex", points);
+	polyscope::getPointCloud("points vertex")->setPointRadius(0.003);
+}
 
 
 void ShowCurveNetwork(OTE& ote, int tt)
@@ -168,6 +199,77 @@ void ShowCurveNetwork(OTE& ote, int tt)
     polyscope::getCurveNetwork("lines1" + std::to_string(tt))->setRadius(0.001);
 }
 
+void ShowCurveNetwork()
+{
+	std::vector<std::array<size_t, 2>> edges;
+	std::vector<glm::vec3> vertexPositions;
+	unordered_map<Point, int, Point_Hash, Point_equal> vertex_order;
+	int i = 0;
+	for (auto& ote : otes)
+	{
+		
+		for (auto vit : ote.ms1.Vertexs)
+		{
+
+			Point p = vit.first;
+			vertexPositions.push_back(glm::vec3{ p.x(), p.y(), p.z() });
+			vertex_order.insert(pair<Point, int>(p, i));
+			i++;
+		}
+		for (auto eit : ote.ms1.edges)
+		{
+			Segment s = eit.first;
+
+			if (vertex_order.find(s.source()) == vertex_order.end() ||
+				vertex_order.find(s.target()) == vertex_order.end())
+			{
+				continue;
+			}
+			size_t i0 = vertex_order.at(s.source());
+			size_t i1 = vertex_order.at(s.target());
+
+			edges.push_back({ i0,i1 });
+		}
+	}
+	
+	polyscope::registerCurveNetwork("lines1", vertexPositions, edges);
+	polyscope::getCurveNetwork("lines1")->setRadius(0.001);
+}
+
+void ShowCurveNetwork(float value)
+{
+	std::vector<std::array<size_t, 2>> edges;
+	std::vector<glm::vec3> vertexPositions;
+	unordered_map<Point, int, Point_Hash, Point_equal> vertex_order;
+	int i = 0;
+	for (auto& ote : otes)
+	{
+		for (auto vit : ote.ms1.Vertexs)
+		{
+
+			Point p = vit.first;
+			vertexPositions.push_back(glm::vec3{ p.x(), p.y(), p.z() });
+			vertex_order.insert(pair<Point, int>(p, i));
+			i++;
+		}
+		for (auto eit : ote.ms1.edges)
+		{
+			Segment s = eit.first;
+			if (eit.second.valid_value < value && sqrt(s.squared_length()) >= 5 * R_MEAN)
+			{
+				continue;
+			}
+			size_t i0 = vertex_order.at(s.source());
+			size_t i1 = vertex_order.at(s.target());
+			edges.push_back({ i0,i1 });
+		}
+	}
+	polyscope::registerCurveNetwork("lines1" , vertexPositions, edges);
+	polyscope::getCurveNetwork("lines1")->setRadius(0.001);
+
+}
+
+
 void DeleteCurveNetwork()
 {
 	for (int i = 0; i < otes.size(); ++i)
@@ -177,6 +279,7 @@ void DeleteCurveNetwork()
 	
 	//polyscope::getCurveNetwork("lines1" + std::to_string(tt))->setRadius(0.001);
 }
+
 
 void ShowCurveNetwork(OTE& ote, int tt,float value)
 {
@@ -216,6 +319,19 @@ void AddDataToEdge(OTE& ote, int i)
         edgevalue.push_back(eit.second.valid_value);
     }
     polyscope::getCurveNetwork("lines1" + std::to_string(i))->addEdgeScalarQuantity("edge value",edgevalue);
+}
+
+void AddDataToEdge()
+{
+	std::vector<double> edgevalue;
+	for (auto& ote : otes)
+	{
+		for (auto eit : ote.ms1.edges)
+		{
+			edgevalue.push_back(eit.second.valid_value);
+		}
+	}
+	polyscope::getCurveNetwork("lines1")->addEdgeScalarQuantity("edge value", edgevalue);
 }
 
 void Writedata()
@@ -266,7 +382,7 @@ void writedata_lines()
 			Point i1 = s.target();
 			
 			ofile << i0.x() << " " << i0.y() << " " << i0.z() << " ";
-			ofile << i1.x() << " " << i1.y() << " " << i1.z() << endl;
+			ofile << i1.x() << " " << i1.y() << " " << i1.z() << " " << eit.second.valid_value <<endl;
 			//edges.push_back({ i0,i1 });
 		}
 	}
@@ -350,16 +466,16 @@ void callback()
 				goal = otes[i].oripoints.size()-1;
 			}*/
 
-			/*goal = 200;
+			int goal = 350;
 			while (otes[i].ms2.Vertexs.size() <= goal)
 			{
 				otes[i].addPoint();
-			}*/
-
-			while (otes[i].endtimes < 3 && otes[i].assin_points.size() >= 2)
-			{
-				otes[i].addPoint();
 			}
+
+			//while (otes[i].endtimes < 3 && otes[i].assin_points.size() >= 2)
+			//{
+			//	otes[i].addPoint();
+			//}
 
 			//otes[i].addPoint();
 			//ShowCurveNetwork(oit, i+1);
@@ -375,13 +491,18 @@ void callback()
 		run_time += addtime;
 		cout << "add time:" << addtime << "\ttotaltime:" << run_time << endl;
 
-		
+#ifdef ONE
+		ShowCurveNetwork();
+		updatevertexPoints();
+#else
 		for (int i = 0; i < otes.size(); ++i)
 		{
 			auto oit = otes[i];
 			ShowCurveNetwork(oit,i+1);
+			updatevertexPoints(oit, i + 1);
 			//cout << idx << endl;
 		}
+#endif
 
 
 		/*for (auto &oit:otes)
@@ -444,9 +565,18 @@ void callback()
 				continue;
 			}
 			idx++;
+#ifndef ONE
 			ShowCurveNetwork(oit, idx);
+			updatevertexPoints(oit, idx);
 			AddDataToEdge(oit, idx);
+#endif
 		}
+
+#ifdef ONE
+		ShowCurveNetwork();
+		updatevertexPoints();
+		AddDataToEdge();
+#endif
     	//updateOriPoints();
         //ShowCurveNetwork();
     	
@@ -487,6 +617,12 @@ void callback()
 		cout << "Relocate time:" << Relocatetime << "\ttotaltime:" << run_time << endl;
 
 		idx = 0;
+
+#ifdef ONE
+		ShowCurveNetwork();
+		updatevertexPoints();
+#else
+		
 		for (auto& oit : otes)
 		{
 			if (oit.ms2.Vertexs.size() <= 1)
@@ -495,7 +631,9 @@ void callback()
 			}
 			idx++;
 			ShowCurveNetwork(oit, idx);
+			updatevertexPoints(oit, idx);
 		}
+#endif
 		//ote.CaculateAssinCost();
 		//ote.RelocateOnce();
 		////ote.ReDelauna();
@@ -507,6 +645,11 @@ void callback()
 
     if (ImGui::InputFloat("threshold", &value, 2, 20))
     {
+
+#ifdef ONE
+		ShowCurveNetwork(value);
+		updatevertexPoints();
+#else
 		int idx = 0;
 		for (auto& oit : otes)
 		{
@@ -515,8 +658,10 @@ void callback()
 			//oit.RelocateOnce();
 			//oit.CaculateAssinCost();
 			ShowCurveNetwork(oit, idx,value);
+			updatevertexPoints(oit, idx);
 			//AddDataToEdge(oit, idx);
 		}
+#endif
         
     }
 
@@ -590,15 +735,15 @@ void callback()
 			{
 				goal = 5;
 			}*/
-			//while (otes[i].ms2.Vertexs.size() > 8)
-			//{
-			//	otes[i].PickAndCollap();
-			//}
-
-			while (otes[i].endtimes < 3&& otes[i].ms2.Vertexs.size()>=10)
+			while (otes[i].ms2.Vertexs.size() > 55)
 			{
 				otes[i].PickAndCollap();
 			}
+
+			//while (otes[i].endtimes < 3&& otes[i].ms2.Vertexs.size()>=10 && otes[i].to_be_Collaps.size()!=0)
+			//{
+			//	otes[i].PickAndCollap();
+			//}
 
 			//updateOriPoints(oit, idx);
 
@@ -615,13 +760,19 @@ void callback()
 		double collapstime = double(end - start) / CLOCKS_PER_SEC;
 		run_time += collapstime;
 		cout << "collaps time:" << collapstime << "\ttotaltime:" << run_time << endl;
-    	
+
+#ifdef ONE
+		ShowCurveNetwork();
+		updatevertexPoints();
+#else
 		for (int i = 0; i < otes.size(); ++i)
 		{
 			auto oit = otes[i];
 			ShowCurveNetwork(oit, i + 1);
+			updatevertexPoints(oit, i + 1);
 			//cout << idx << endl;
 		}
+#endif
         /*while (ote.ms2.Vertexs.size() > steps1)
         {
             ote.PickAndCollap();
@@ -642,14 +793,26 @@ void callback()
 			idx++;
 			oit.CaculateAssinCost();
 			oit.GetValidres(value);
+#ifndef ONE
 			//updateOriPoints(oit, idx);
 			ShowCurveNetwork(oit, idx);
+			updatevertexPoints(oit, idx);
+#endif
 		}
+
+#ifdef ONE
+		ShowCurveNetwork();
+		updatevertexPoints();
+#endif
 	}
 
 	if (ImGui::Button("Prepare Global"))
 	{
+#ifdef ONE
+		polyscope::removeStructure("lines1");
+#else
 		DeleteCurveNetwork();
+#endif
 		std::vector<std::vector<Point>> oriP;
 		std::vector<std::vector<Point>> seedP;
 		std::vector<std::vector<Segment>> seededges;
@@ -684,13 +847,18 @@ void callback()
 			otetemp.InitGlobalCollape(oriP[i], seedP[i], seededges[i], PNum);
 			otes.push_back(otetemp);
 		}
-
+#ifdef ONE
+		ShowCurveNetwork();
+		updatevertexPoints();
+#else
 		int idx = 0;
 		for (auto& oit : otes)
 		{
 			idx++;
 			ShowCurveNetwork(oit, idx);
+			updatevertexPoints(oit, idx);
 		}
+#endif
 	}
 
 	ImGui::SameLine();
@@ -704,6 +872,11 @@ void callback()
 	if (ImGui::Button("merge"))
 	{
 		int idx = 0;
+
+#ifdef ONE
+		ShowCurveNetwork();
+		updatevertexPoints();
+#else		
 		for (auto& oit : otes)
 		{
 			idx++;
@@ -711,7 +884,9 @@ void callback()
 			//oit.GetValidres(value);
 			//updateOriPoints(oit, idx);
 			ShowCurveNetwork(oit, idx);
+			updatevertexPoints(oit, idx);
 		}
+#endif
 		//ote.MergeLines();
 		//ShowCurveNetwork();
 		//AddDataToEdge();
@@ -725,13 +900,19 @@ int main()
     polyscope::init();
     ReadDataAndInit();
 
+#ifdef ONE
+	
+	ShowCurveNetwork();
+	
+#else
+
 	int idx = 0;
 	for (auto& oit : otes)
 	{
 		idx++;
 		ShowCurveNetwork(oit, idx);
 	}
-
+#endif
     //ShowCurveNetwork();
     polyscope::options::maxFPS = -1;
     polyscope::view::upDir = polyscope::view::UpDir::ZUp;  

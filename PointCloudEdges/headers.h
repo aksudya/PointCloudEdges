@@ -74,5 +74,5 @@ typedef pair<vertex_handle, vertex_handle>					vertex_pair;
 
 typedef K::Vector_3											Vector;
 
-#define R_MEAN  0.0035463088589990604
-#define THREATH 0.5
+#define R_MEAN  1
+#define THREATH 10

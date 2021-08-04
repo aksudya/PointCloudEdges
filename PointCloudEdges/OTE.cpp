@@ -106,7 +106,9 @@ void OTE::InitGlobalCollape(vector<Point> oriPoints, vector<Point> seedPoints,ve
 		ms1.Vertexs.emplace(vit->point(), vd);
 
 	}
-
+	
+	to_be_Collaps.clear();
+	
 	for (auto eit = delaunay_input.finite_edges_begin(); eit != delaunay_input.finite_edges_end(); ++eit)
 	{
 
@@ -120,8 +122,10 @@ void OTE::InitGlobalCollape(vector<Point> oriPoints, vector<Point> seedPoints,ve
 		{
 			edge_data ed;
 			ms1.edges.emplace(s, ed);
+
+			to_be_Collaps.insert(s);
+			to_be_Collaps.insert(TwinEdge(s));
 		}
-		
 	}
 
 	for (auto& eit : seededges)
@@ -133,7 +137,14 @@ void OTE::InitGlobalCollape(vector<Point> oriPoints, vector<Point> seedPoints,ve
 	ms1.buildAdj();
 
 
-	
+	less_cost = DBL_MAX;
+	pri_cost = 0;
+	iter_times = 0;
+	debugvalue = 0;
+	isCollaps = true;
+	endtimes = 0;
+	last_cost = 0;
+	llast_cost = 0;
 
 	//pri_cost = 0;
 	iter_times = 0;
@@ -1230,7 +1241,7 @@ void OTE::PickAndCollap()
 	{
 		endtimes++;
 	}*/
-	if ((pri_cost - last_cost) / (R_MEAN)  >= 1.0 / (THREATH) &&last_cost!=0)
+	if ((pri_cost - last_cost) / (R_MEAN)  >= 2.0 / (THREATH) &&last_cost!=0)
 	{
 		endtimes++;
 	}
@@ -1262,23 +1273,23 @@ void OTE::PickAndCollap()
 
 	vector<Point> Todelete;
 	AssinEdge();
-	Segment ssss;
-	if (ms2.edges.find(less_seg) == ms2.edges.end())
-	{
-		ssss = TwinEdge(less_seg);
-	}
-	else
-	{
-		ssss = less_seg;
-	}
-	for (auto pit : ms2.edges.at(ssss).assign.close_points)
-	{
-		Todelete.push_back(pit);
-	}
+	//Segment ssss;
+	//if (ms2.edges.find(less_seg) == ms2.edges.end())
+	//{
+	//	ssss = TwinEdge(less_seg);
+	//}
+	//else
+	//{
+	//	ssss = less_seg;
+	//}
+	//for (auto pit : ms2.edges.at(ssss).assign.close_points)
+	//{
+	//	Todelete.push_back(pit);
+	//}
 
 
-	Todelete.push_back(ssss.source());
-	Todelete.push_back(ssss.target());
+	//Todelete.push_back(ssss.source());
+	//Todelete.push_back(ssss.target());
 
 	OneRingPoint = GetOneRingVertex(less_seg.source());
 
