@@ -15,6 +15,7 @@ std::vector<OTE> otes;
 std::vector<OTE> oteblks;
 //OTE ote;
 string filename = "./data/";
+string outfilename = "./data/out.txt";
 double run_time = 0;
 
 void ReadDataAndInit()
@@ -337,7 +338,7 @@ void AddDataToEdge()
 void Writedata()
 {
 	ofstream ofile;
-	ofile.open(filename + "out1.xyz");
+	ofile.open(filename + "out.xyz");
 	double res = 0.01;
 	for (auto& ote : otes)
 	{
@@ -371,7 +372,7 @@ void Writedata()
 void writedata_lines()
 {
 	ofstream ofile;
-	ofile.open(filename + "outLines.xyz");
+	ofile.open(outfilename);
 	//double res = 0.01;
 	for (auto& ote : otes)
 	{
@@ -382,7 +383,7 @@ void writedata_lines()
 			Point i1 = s.target();
 			
 			ofile << i0.x() << " " << i0.y() << " " << i0.z() << " ";
-			ofile << i1.x() << " " << i1.y() << " " << i1.z() << " " << eit.second.valid_value <<endl;
+			ofile << i1.x() << " " << i1.y() << " " << i1.z() << " " /*<< eit.second.valid_value*/ <<endl;
 			//edges.push_back({ i0,i1 });
 		}
 	}
@@ -466,7 +467,7 @@ void callback()
 				goal = otes[i].oripoints.size()-1;
 			}*/
 
-			int goal = 350;
+			int goal = steps;
 			while (otes[i].ms2.Vertexs.size() <= goal)
 			{
 				otes[i].addPoint();
@@ -735,7 +736,7 @@ void callback()
 			{
 				goal = 5;
 			}*/
-			while (otes[i].ms2.Vertexs.size() > 55)
+			while (otes[i].ms2.Vertexs.size() > steps1)
 			{
 				otes[i].PickAndCollap();
 			}
